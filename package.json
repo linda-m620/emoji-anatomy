@@ -1,0 +1,16 @@
+{
+  "name": "emoji-anatomy",
+  "version": "0.1.0",
+  "description": "Command line tool that breaks emoji sequences down into their component codepoints",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "emoji-anatomy": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
