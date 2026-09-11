@@ -18,13 +18,13 @@ apart.
 ```
 $ echo "👨‍👩‍👧‍👦" | emoji-anatomy
 sequence: 👨‍👩‍👧‍👦
-  U+1F468    base emoji
+  U+1F468    base emoji "MAN"
   U+200D     zero-width joiner
-  U+1F469    base emoji
+  U+1F469    base emoji "WOMAN"
   U+200D     zero-width joiner
-  U+1F467    base emoji
+  U+1F467    base emoji "GIRL"
   U+200D     zero-width joiner
-  U+1F466    base emoji
+  U+1F466    base emoji "BOY"
 
 $ echo "🇨🇦 👋🏽" | emoji-anatomy
 sequence: 🇨🇦
@@ -32,7 +32,7 @@ sequence: 🇨🇦
   U+1F1E6    regional indicator "A"
 
 sequence: 👋🏽
-  U+1F44B    base emoji
+  U+1F44B    base emoji "WAVING HAND SIGN"
   U+1F3FD    skin tone modifier, type 4, medium
 ```
 
@@ -57,8 +57,9 @@ node dist/index.js chat-export.txt
 
 ## What it doesn't do (yet)
 
-It classifies each codepoint by role but doesn't print the Unicode
-character name (e.g. "MAN", "FAMILY"), since that needs a name table
-this project doesn't bundle yet. It also treats each line of input the
-same way regardless of source, so it won't tell you which file or line
-a sequence came from.
+It only knows Unicode names for a few dozen common base emoji (people,
+hand gestures, hearts, and the objects used in profession sequences
+like 👩‍🔬 or 👨‍🍳); anything else still prints as a bare "base emoji"
+with no name. It also treats each line of input the same way regardless
+of source, so it won't tell you which file or line a sequence came
+from.

@@ -2,6 +2,8 @@
 
 import { readFileSync } from "node:fs";
 
+import { BASE_EMOJI_NAMES } from "./names";
+
 type Role =
   | "base"
   | "zwj"
@@ -85,7 +87,12 @@ function classify(cp: number): Piece {
   if (cp >= 0xe0020 && cp <= 0xe007e) {
     return { codepoint: cp, role: "tag", label: `tag letter "${String.fromCharCode(cp - 0xe0000)}"` };
   }
-  return { codepoint: cp, role: "base", label: "base emoji" };
+  const name = BASE_EMOJI_NAMES[cp];
+  return {
+    codepoint: cp,
+    role: "base",
+    label: name ? `base emoji "${name}"` : "base emoji",
+  };
 }
 
 function findSequences(text: string): Sequence[] {
