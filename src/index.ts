@@ -123,6 +123,24 @@ function printSequence(seq: Sequence): void {
   console.log("");
 }
 
+// Codepoints outside the Basic Multilingual Plane (tag characters, most
+// pictographs) can't round-trip through JSON.stringify as a bare string
+// without surrogate pairs getting mangled by naive slicing on the
+// consumer's end, so we hand back the character alongside the numeric
+// codepoint rather than making the consumer reassemble it.
+function toJson(sequences: Sequence[]): unknown {
+  return sequences.map((seq) => ({
+    cluster: seq.cluster,
+    pieces: seq.pieces.map((piece) => ({
+      codepoint: piece.codepoint,
+      hex: formatHex(piece.codepoint),
+      char: String.fromCodePoint(piece.codepoint),
+      role: piece.role,
+      label: piece.label,
+    })),
+  }));
+}
+
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) {
@@ -142,7 +160,7 @@ async function readInput(args: string[]): Promise<string> {
   return parts.join("\n");
 }
 
-const HELP = `usage: emoji-anatomy [file ...]
+const HELP = `usage: emoji-anatomy [--json] [file ...]
 
 Reads text from the given files, or from stdin if no files are given,
 and prints a breakdown of every emoji sequence it finds: ZWJ sequences,
@@ -152,21 +170,33 @@ there is nothing in it to decompose.
 
 Use "-" as a filename to read stdin explicitly alongside real files.
 
+Options:
+  --json    print sequences as a JSON array instead of plain text
+
 Examples:
   emoji-anatomy notes.txt
   echo "\u{1f468}‍\u{1f469}‍\u{1f467}‍\u{1f466}" | emoji-anatomy
   emoji-anatomy chat.log - extra.txt
+  emoji-anatomy --json notes.txt | jq '.[].cluster'
 `;
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  if (args.includes("--help") || args.includes("-h")) {
+  const rawArgs = process.argv.slice(2);
+  if (rawArgs.includes("--help") || rawArgs.includes("-h")) {
     process.stdout.write(HELP);
     return;
   }
 
+  const asJson = rawArgs.includes("--json");
+  const args = rawArgs.filter((arg) => arg !== "--json");
+
   const text = await readInput(args);
   const sequences = findSequences(text);
+
+  if (asJson) {
+    console.log(JSON.stringify(toJson(sequences), null, 2));
+    return;
+  }
 
   if (sequences.length === 0) {
     console.log("no emoji sequences found");

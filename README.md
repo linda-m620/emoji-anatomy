@@ -45,6 +45,23 @@ cat chat-export.txt | emoji-anatomy
 emoji-anatomy file-a.txt - file-b.txt   # "-" reads stdin in place
 ```
 
+Pass `--json` to get a JSON array instead, for piping into `jq` or
+another script. Each piece includes the codepoint as both a number and
+a `U+XXXX` hex string, plus the actual character:
+
+```
+$ echo "🇨🇦" | emoji-anatomy --json
+[
+  {
+    "cluster": "🇨🇦",
+    "pieces": [
+      { "codepoint": 127464, "hex": "U+1F1E8", "char": "🇨", "role": "regional-indicator", "label": "regional indicator \"C\"" },
+      { "codepoint": 127462, "hex": "U+1F1E6", "char": "🇦", "role": "regional-indicator", "label": "regional indicator \"A\"" }
+    ]
+  }
+]
+```
+
 ## Building
 
 There are no dependencies to install. Compile with a TypeScript
