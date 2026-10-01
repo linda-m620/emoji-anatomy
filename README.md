@@ -17,7 +17,7 @@ apart.
 
 ```
 $ echo "👨‍👩‍👧‍👦" | emoji-anatomy
-sequence: 👨‍👩‍👧‍👦
+sequence: 👨‍👩‍👧‍👦  (<stdin>:1)
   U+1F468    base emoji "MAN"
   U+200D     zero-width joiner
   U+1F469    base emoji "WOMAN"
@@ -27,11 +27,11 @@ sequence: 👨‍👩‍👧‍👦
   U+1F466    base emoji "BOY"
 
 $ echo "🇨🇦 👋🏽" | emoji-anatomy
-sequence: 🇨🇦
+sequence: 🇨🇦  (<stdin>:1)
   U+1F1E8    regional indicator "C"
   U+1F1E6    regional indicator "A"
 
-sequence: 👋🏽
+sequence: 👋🏽  (<stdin>:1)
   U+1F44B    base emoji "WAVING HAND SIGN"
   U+1F3FD    skin tone modifier, type 4, medium
 ```
@@ -46,14 +46,17 @@ emoji-anatomy file-a.txt - file-b.txt   # "-" reads stdin in place
 ```
 
 Pass `--json` to get a JSON array instead, for piping into `jq` or
-another script. Each piece includes the codepoint as both a number and
-a `U+XXXX` hex string, plus the actual character:
+another script. Each sequence carries its `source` (file name, or
+`<stdin>`) and 1-based `line`. Each piece includes the codepoint as both
+a number and a `U+XXXX` hex string, plus the actual character:
 
 ```
 $ echo "🇨🇦" | emoji-anatomy --json
 [
   {
     "cluster": "🇨🇦",
+    "source": "<stdin>",
+    "line": 1,
     "pieces": [
       { "codepoint": 127464, "hex": "U+1F1E8", "char": "🇨", "role": "regional-indicator", "label": "regional indicator \"C\"" },
       { "codepoint": 127462, "hex": "U+1F1E6", "char": "🇦", "role": "regional-indicator", "label": "regional indicator \"A\"" }
@@ -77,6 +80,5 @@ node dist/index.js chat-export.txt
 It only knows Unicode names for a few dozen common base emoji (people,
 hand gestures, hearts, and the objects used in profession sequences
 like 👩‍🔬 or 👨‍🍳); anything else still prints as a bare "base emoji"
-with no name. It also treats each line of input the same way regardless
-of source, so it won't tell you which file or line a sequence came
-from.
+with no name. It also doesn't print a summary of how many sequences of
+each type it found.

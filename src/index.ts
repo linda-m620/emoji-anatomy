@@ -25,6 +25,16 @@ interface Sequence {
   pieces: Piece[];
 }
 
+interface Source {
+  name: string;
+  text: string;
+}
+
+interface Located extends Sequence {
+  source: string;
+  line: number;
+}
+
 // Ranges of codepoints that make emoji sequences worth reporting. A bare
 // combining accent on a letter, or a Hangul jamo cluster, also comes out
 // of Intl.Segmenter as one multi-codepoint grapheme, but neither is an
@@ -111,12 +121,25 @@ function findSequences(text: string): Sequence[] {
   return results;
 }
 
+// A grapheme cluster never spans a line break, so splitting first is safe
+// and gives us line numbers without tracking offsets through the segmenter.
+function locateSequences(source: Source): Located[] {
+  const results: Located[] = [];
+  const lines = source.text.split(/\r\n|\r|\n/);
+  lines.forEach((line, index) => {
+    for (const seq of findSequences(line)) {
+      results.push({ ...seq, source: source.name, line: index + 1 });
+    }
+  });
+  return results;
+}
+
 function formatHex(cp: number): string {
   return "U+" + cp.toString(16).toUpperCase().padStart(4, "0");
 }
 
-function printSequence(seq: Sequence): void {
-  console.log(`sequence: ${seq.cluster}`);
+function printSequence(seq: Located): void {
+  console.log(`sequence: ${seq.cluster}  (${seq.source}:${seq.line})`);
   for (const piece of seq.pieces) {
     console.log(`  ${formatHex(piece.codepoint).padEnd(10)} ${piece.label}`);
   }
@@ -128,9 +151,11 @@ function printSequence(seq: Sequence): void {
 // without surrogate pairs getting mangled by naive slicing on the
 // consumer's end, so we hand back the character alongside the numeric
 // codepoint rather than making the consumer reassemble it.
-function toJson(sequences: Sequence[]): unknown {
+function toJson(sequences: Located[]): unknown {
   return sequences.map((seq) => ({
     cluster: seq.cluster,
+    source: seq.source,
+    line: seq.line,
     pieces: seq.pieces.map((piece) => ({
       codepoint: piece.codepoint,
       hex: formatHex(piece.codepoint),
@@ -149,15 +174,19 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-async function readInput(args: string[]): Promise<string> {
+async function readInput(args: string[]): Promise<Source[]> {
   if (args.length === 0) {
-    return readStdin();
+    return [{ name: "<stdin>", text: await readStdin() }];
   }
-  const parts: string[] = [];
+  const sources: Source[] = [];
   for (const arg of args) {
-    parts.push(arg === "-" ? await readStdin() : readFileSync(arg, "utf8"));
+    if (arg === "-") {
+      sources.push({ name: "<stdin>", text: await readStdin() });
+    } else {
+      sources.push({ name: arg, text: readFileSync(arg, "utf8") });
+    }
   }
-  return parts.join("\n");
+  return sources;
 }
 
 const HELP = `usage: emoji-anatomy [--json] [file ...]
@@ -190,8 +219,8 @@ async function main(): Promise<void> {
   const asJson = rawArgs.includes("--json");
   const args = rawArgs.filter((arg) => arg !== "--json");
 
-  const text = await readInput(args);
-  const sequences = findSequences(text);
+  const sources = await readInput(args);
+  const sequences = sources.flatMap(locateSequences);
 
   if (asJson) {
     console.log(JSON.stringify(toJson(sequences), null, 2));
